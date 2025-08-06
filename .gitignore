@@ -1,0 +1,12 @@
+# 忽略 Python 虚拟环境
+groupvenv/
+
+# 忽略 VS Code 的设置文件夹
+.vscode/
+
+# 忽略 __pycache__ 及 .pyc 编译文件
+__pycache__/
+*.py[cod]
+
+# 忽略你不想推送的临时文件（例如日志等）
+*.log
