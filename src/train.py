@@ -14,7 +14,7 @@ from torchvision import datasets, transforms
 sys.path.append(os.path.dirname(__file__))
 
 from worker import Worker
-from krum import krum, multi_krum
+from krum import krum, multi_krum, coordinate_median, trimmed_mean, bulyan
 from model import get_model
 
 
@@ -34,8 +34,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', choices=['mlp', 'conv'], default='mlp',
                         help="模型结构：mlp 或 conv")
-    parser.add_argument('--mode', choices=['average', 'krum', 'multikrum'], default='krum',
-                        help="聚合方式")
+    parser.add_argument('--mode',choices=['average', 'krum', 'multikrum', 'median', 'trimmed', 'bulyan'],
+    default='krum',
+    help="聚合方式")
+
     parser.add_argument('--f', type=int, default=2, help="最大 Byzantine 节点数")
     parser.add_argument('--m', type=int, default=None,
                         help="Multi-Krum 中选取的梯度数 m，默认 n-f")
@@ -99,8 +101,16 @@ def main():
                     agg.append(stacked.mean(dim=0))
             elif args.mode == 'krum':
                 agg = krum(grad_lists, args.f)
-            else:  # multikrum
+            elif args.mode == 'median':
+                agg = coordinate_median(grad_lists)
+            elif args.mode == 'trimmed':
+                agg = trimmed_mean(grad_lists, args.f)
+            elif args.mode == 'bulyan':
+                agg = bulyan(grad_lists, args.f)
+            elif args.mode == 'multikrum':
                 agg = multi_krum(grad_lists, args.f, args.m)
+            else:
+                raise ValueError(f"Unknown mode {args.mode}")
 
             # 4) 更新模型参数
             with torch.no_grad():
