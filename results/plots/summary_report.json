@@ -1,0 +1,71 @@
+{
+  "total_experiments": 30,
+  "algorithms": [
+    "median",
+    "bulyan",
+    "average",
+    "trimmed_mean",
+    "krum"
+  ],
+  "algorithm_stats": {
+    "median": {
+      "count": 6,
+      "avg_accuracy": 0.89785,
+      "std_accuracy": 0.015314345126928123,
+      "avg_loss": 0.36658230225245164,
+      "std_loss": 0.06498413898745453,
+      "avg_time": 30.05337841908137,
+      "std_time": 24.707410681350055
+    },
+    "bulyan": {
+      "count": 6,
+      "avg_accuracy": 0.9128499999999998,
+      "std_accuracy": 0.02422373147693532,
+      "avg_loss": 0.31254977993667127,
+      "std_loss": 0.10000644529461289,
+      "avg_time": 39.21619175672531,
+      "std_time": 32.939426848313616
+    },
+    "average": {
+      "count": 6,
+      "avg_accuracy": 0.6291666666666665,
+      "std_accuracy": 0.37981925818590195,
+      "avg_loss": NaN,
+      "std_loss": NaN,
+      "avg_time": 21.16698658068975,
+      "std_time": 16.436097694476125
+    },
+    "trimmed_mean": {
+      "count": 6,
+      "avg_accuracy": 0.9110166666666667,
+      "std_accuracy": 0.027068334308232227,
+      "avg_loss": 0.32931194069484876,
+      "std_loss": 0.12309064786355232,
+      "avg_time": 30.835510162512463,
+      "std_time": 25.191960092197046
+    },
+    "krum": {
+      "count": 6,
+      "avg_accuracy": 0.9038999999999998,
+      "std_accuracy": 0.01884002830854207,
+      "avg_loss": 0.3562977897624175,
+      "std_loss": 0.05947975492487982,
+      "avg_time": 28.184617161750793,
+      "std_time": 22.77904687468123
+    }
+  },
+  "best_experiments": {
+    "best_accuracy": {
+      "exp_id": "conv_trimmed_mean_f0_reverse",
+      "value": 0.9483
+    },
+    "best_loss": {
+      "exp_id": "conv_trimmed_mean_f0_reverse",
+      "value": 0.17247582450509072
+    },
+    "fastest": {
+      "exp_id": "mlp_average_f2_reverse",
+      "value": 4.696129107475281
+    }
+  }
+}

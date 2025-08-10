@@ -62,231 +62,295 @@ def load_all_results(logs_dir="results/logs"):
     return results
 
 
-def plot_algorithm_comparison(results: Dict[str, Any], save_path: str = None):
+def plot_loss_comparison_1(results: Dict[str, Any], save_path: str = None):
     """
-    绘制算法对比图
+    表一：average与krum在mlp与conv，f=0时的loss曲线
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
     
-    Args:
-        results: 实验结果字典
-        save_path: 保存路径
-    """
-    # 按算法分组
-    algorithms = {}
+    # 筛选条件：f=0, attack=reverse, mode in [average, krum]
+    target_experiments = []
     for exp_id, data in results.items():
+        args = data['args']
+        if (args['f'] == 0 and 
+            args['attack_type'] == 'reverse' and 
+            args['mode'] in ['average', 'krum']):
+            target_experiments.append((exp_id, data))
+    
+    # 按模型分组
+    mlp_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['model'] == 'mlp']
+    conv_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['model'] == 'conv']
+    
+    # 绘制MLP结果
+    colors = {'average': 'blue', 'krum': 'red'}
+    for exp_id, data in mlp_experiments:
         mode = data['args']['mode']
-        if mode not in algorithms:
-            algorithms[mode] = []
-        algorithms[mode].append(data)
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[0].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker='o')
     
-    # 创建图表
-    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+    axes[0].set_title('MLP模型 - f=0 (无攻击)')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Loss')
+    axes[0].legend()
+    axes[0].grid(True)
     
-    colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown']
+    # 绘制ConvNet结果
+    for exp_id, data in conv_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[1].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker='s')
     
-    for i, (algo, data_list) in enumerate(algorithms.items()):
-        color = colors[i % len(colors)]
-        
-        # 收集数据
-        accuracies = [d['final_accuracy'] for d in data_list]
-        losses = [d['final_loss'] for d in data_list]
-        times = [d['avg_time_per_epoch'] for d in data_list]
-        
-        # 准确率对比
-        axes[0, 0].bar(f"{algo}\n(n={len(data_list)})", np.mean(accuracies), 
-                       yerr=np.std(accuracies), color=color, alpha=0.7, capsize=5)
-        
-        # 损失对比
-        axes[0, 1].bar(f"{algo}\n(n={len(data_list)})", np.mean(losses), 
-                       yerr=np.std(losses), color=color, alpha=0.7, capsize=5)
-        
-        # 时间对比
-        axes[1, 0].bar(f"{algo}\n(n={len(data_list)})", np.mean(times), 
-                       yerr=np.std(times), color=color, alpha=0.7, capsize=5)
-        
-        # 准确率vs时间散点图
-        axes[1, 1].scatter(np.mean(times), np.mean(accuracies), 
-                           s=100, color=color, alpha=0.7, label=algo)
-    
-    axes[0, 0].set_title('最终准确率对比')
-    axes[0, 0].set_ylabel('准确率')
-    axes[0, 0].tick_params(axis='x', rotation=45)
-    
-    axes[0, 1].set_title('最终损失对比')
-    axes[0, 1].set_ylabel('损失')
-    axes[0, 1].tick_params(axis='x', rotation=45)
-    
-    axes[1, 0].set_title('平均训练时间对比')
-    axes[1, 0].set_ylabel('时间 (秒)')
-    axes[1, 0].tick_params(axis='x', rotation=45)
-    
-    axes[1, 1].set_title('准确率 vs 训练时间')
-    axes[1, 1].set_xlabel('平均训练时间 (秒)')
-    axes[1, 1].set_ylabel('最终准确率')
-    axes[1, 1].legend()
-    axes[1, 1].grid(True)
+    axes[1].set_title('ConvNet模型 - f=0 (无攻击)')
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel('Loss')
+    axes[1].legend()
+    axes[1].grid(True)
     
     plt.tight_layout()
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"算法对比图已保存到: {save_path}")
+        print(f"表一已保存到: {save_path}")
     else:
         plt.show()
 
 
-def plot_training_curves(results: Dict[str, Any], save_path: str = None):
+def plot_loss_comparison_2(results: Dict[str, Any], save_path: str = None):
     """
-    绘制训练曲线
-    
-    Args:
-        results: 实验结果字典
-        save_path: 保存路径
+    表二：average与krum在mlp训练时，f=1、2时的loss曲线
     """
-    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
     
-    colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown']
+    # 筛选条件：model=mlp, f in [1,2], attack=reverse, mode in [average, krum]
+    target_experiments = []
+    for exp_id, data in results.items():
+        args = data['args']
+        if (args['model'] == 'mlp' and 
+            args['f'] in [1, 2] and 
+            args['attack_type'] == 'reverse' and 
+            args['mode'] in ['average', 'krum']):
+            target_experiments.append((exp_id, data))
     
-    for i, (exp_id, data) in enumerate(results.items()):
-        color = colors[i % len(colors)]
-        training_log = data['training_log']
-        
-        epochs = training_log['epoch']
-        accuracies = training_log['accuracy']
-        losses = training_log['loss']
-        times = training_log['time_per_epoch']
-        
-        # 准确率曲线
-        axes[0, 0].plot(epochs, accuracies, color=color, alpha=0.7, 
-                        label=f"{exp_id} (最终: {accuracies[-1]:.3f})")
-        
-        # 损失曲线
-        axes[0, 1].plot(epochs, losses, color=color, alpha=0.7, 
-                        label=f"{exp_id} (最终: {losses[-1]:.3f})")
-        
-        # 训练时间
-        axes[1, 0].plot(epochs, times, color=color, alpha=0.7, 
-                        label=f"{exp_id} (平均: {np.mean(times):.2f}s)")
-        
-        # 累积时间
-        cumulative_time = np.cumsum(times)
-        axes[1, 1].plot(epochs, cumulative_time, color=color, alpha=0.7, 
-                        label=f"{exp_id} (总计: {cumulative_time[-1]:.2f}s)")
+    # 按f值分组
+    f1_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 1]
+    f2_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 2]
     
-    axes[0, 0].set_title('训练准确率曲线')
-    axes[0, 0].set_xlabel('Epoch')
-    axes[0, 0].set_ylabel('准确率')
-    axes[0, 0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    axes[0, 0].grid(True)
+    # 绘制f=1结果
+    colors = {'average': 'blue', 'krum': 'red'}
+    for exp_id, data in f1_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[0].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker='o')
     
-    axes[0, 1].set_title('训练损失曲线')
-    axes[0, 1].set_xlabel('Epoch')
-    axes[0, 1].set_ylabel('损失')
-    axes[0, 1].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    axes[0, 1].grid(True)
+    axes[0].set_title('MLP模型 - f=1 (1个拜占庭节点)')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Loss')
+    axes[0].legend()
+    axes[0].grid(True)
     
-    axes[1, 0].set_title('每轮训练时间')
-    axes[1, 0].set_xlabel('Epoch')
-    axes[1, 0].set_ylabel('时间 (秒)')
-    axes[1, 0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    axes[1, 0].grid(True)
+    # 绘制f=2结果
+    for exp_id, data in f2_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[1].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker='s')
     
-    axes[1, 1].set_title('累积训练时间')
-    axes[1, 1].set_xlabel('Epoch')
-    axes[1, 1].set_ylabel('时间 (秒)')
-    axes[1, 1].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    axes[1, 1].grid(True)
+    axes[1].set_title('MLP模型 - f=2 (2个拜占庭节点)')
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel('Loss')
+    axes[1].legend()
+    axes[1].grid(True)
     
     plt.tight_layout()
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"训练曲线图已保存到: {save_path}")
+        print(f"表二已保存到: {save_path}")
     else:
         plt.show()
 
 
-def plot_byzantine_impact(results: Dict[str, Any], save_path: str = None):
+def plot_loss_comparison_3(results: Dict[str, Any], save_path: str = None):
     """
-    绘制拜占庭节点数量影响
-    
-    Args:
-        results: 实验结果字典
-        save_path: 保存路径
+    表三：average与krum在conv训练时，f=1、2时的loss曲线
     """
-    # 按算法和拜占庭节点数分组
-    impact_data = {}
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
     
+    # 筛选条件：model=conv, f in [1,2], attack=reverse, mode in [average, krum]
+    target_experiments = []
     for exp_id, data in results.items():
+        args = data['args']
+        if (args['model'] == 'conv' and 
+            args['f'] in [1, 2] and 
+            args['attack_type'] == 'reverse' and 
+            args['mode'] in ['average', 'krum']):
+            target_experiments.append((exp_id, data))
+    
+    # 按f值分组
+    f1_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 1]
+    f2_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 2]
+    
+    # 绘制f=1结果
+    colors = {'average': 'blue', 'krum': 'red'}
+    for exp_id, data in f1_experiments:
         mode = data['args']['mode']
-        f = data['args']['f']
-        
-        if mode not in impact_data:
-            impact_data[mode] = {}
-        
-        impact_data[mode][f] = {
-            'accuracy': data['final_accuracy'],
-            'loss': data['final_loss'],
-            'time': data['avg_time_per_epoch']
-        }
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[0].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker='o')
     
-    # 创建图表
-    fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+    axes[0].set_title('ConvNet模型 - f=1 (1个拜占庭节点)')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Loss')
+    axes[0].legend()
+    axes[0].grid(True)
     
-    colors = ['blue', 'red', 'green', 'orange', 'purple']
+    # 绘制f=2结果
+    for exp_id, data in f2_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[1].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker='s')
     
-    for i, (algo, f_data) in enumerate(impact_data.items()):
-        color = colors[i % len(colors)]
-        
-        f_values = sorted(f_data.keys())
-        accuracies = [f_data[f]['accuracy'] for f in f_values]
-        losses = [f_data[f]['loss'] for f in f_values]
-        times = [f_data[f]['time'] for f in f_values]
-        
-        # 准确率 vs 拜占庭节点数
-        axes[0, 0].plot(f_values, accuracies, 'o-', color=color, 
-                        linewidth=2, markersize=8, label=algo)
-        
-        # 损失 vs 拜占庭节点数
-        axes[0, 1].plot(f_values, losses, 's-', color=color, 
-                        linewidth=2, markersize=8, label=algo)
-        
-        # 时间 vs 拜占庭节点数
-        axes[1, 0].plot(f_values, times, '^-', color=color, 
-                        linewidth=2, markersize=8, label=algo)
-        
-        # 准确率 vs 时间散点图
-        axes[1, 1].scatter(times, accuracies, color=color, s=100, 
-                           alpha=0.7, label=algo)
-    
-    axes[0, 0].set_title('拜占庭节点数对准确率的影响')
-    axes[0, 0].set_xlabel('拜占庭节点数 (f)')
-    axes[0, 0].set_ylabel('最终准确率')
-    axes[0, 0].legend()
-    axes[0, 0].grid(True)
-    
-    axes[0, 1].set_title('拜占庭节点数对损失的影响')
-    axes[0, 1].set_xlabel('拜占庭节点数 (f)')
-    axes[0, 1].set_ylabel('最终损失')
-    axes[0, 1].legend()
-    axes[0, 1].grid(True)
-    
-    axes[1, 0].set_title('拜占庭节点数对训练时间的影响')
-    axes[1, 0].set_xlabel('拜占庭节点数 (f)')
-    axes[1, 0].set_ylabel('平均训练时间 (秒)')
-    axes[1, 0].legend()
-    axes[1, 0].grid(True)
-    
-    axes[1, 1].set_title('准确率 vs 训练时间')
-    axes[1, 1].set_xlabel('平均训练时间 (秒)')
-    axes[1, 1].set_ylabel('最终准确率')
-    axes[1, 1].legend()
-    axes[1, 1].grid(True)
+    axes[1].set_title('ConvNet模型 - f=2 (2个拜占庭节点)')
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel('Loss')
+    axes[1].legend()
+    axes[1].grid(True)
     
     plt.tight_layout()
     
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"拜占庭影响图已保存到: {save_path}")
+        print(f"表三已保存到: {save_path}")
+    else:
+        plt.show()
+
+
+def plot_loss_comparison_4(results: Dict[str, Any], save_path: str = None):
+    """
+    表四：krum/median/trimmed_mean/bulyan在mlp训练时，f=1、2的loss曲线
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # 筛选条件：model=mlp, f in [1,2], attack=reverse, mode in [krum, median, trimmed_mean, bulyan]
+    target_experiments = []
+    for exp_id, data in results.items():
+        args = data['args']
+        if (args['model'] == 'mlp' and 
+            args['f'] in [1, 2] and 
+            args['attack_type'] == 'reverse' and 
+            args['mode'] in ['krum', 'median', 'trimmed_mean', 'bulyan']):
+            target_experiments.append((exp_id, data))
+    
+    # 按f值分组
+    f1_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 1]
+    f2_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 2]
+    
+    # 绘制f=1结果
+    colors = {'krum': 'red', 'median': 'green', 'trimmed_mean': 'orange', 'bulyan': 'purple'}
+    markers = {'krum': 'o', 'median': 's', 'trimmed_mean': '^', 'bulyan': 'D'}
+    
+    for exp_id, data in f1_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[0].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker=markers[mode])
+    
+    axes[0].set_title('MLP模型 - f=1 (鲁棒聚合算法对比)')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Loss')
+    axes[0].legend()
+    axes[0].grid(True)
+    
+    # 绘制f=2结果
+    for exp_id, data in f2_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[1].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker=markers[mode])
+    
+    axes[1].set_title('MLP模型 - f=2 (鲁棒聚合算法对比)')
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel('Loss')
+    axes[1].legend()
+    axes[1].grid(True)
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"表四已保存到: {save_path}")
+    else:
+        plt.show()
+
+
+def plot_loss_comparison_5(results: Dict[str, Any], save_path: str = None):
+    """
+    表五：krum/median/trimmed_mean/bulyan在conv训练时，f=1、2的loss曲线
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+    
+    # 筛选条件：model=conv, f in [1,2], attack=reverse, mode in [krum, median, trimmed_mean, bulyan]
+    target_experiments = []
+    for exp_id, data in results.items():
+        args = data['args']
+        if (args['model'] == 'conv' and 
+            args['f'] in [1, 2] and 
+            args['attack_type'] == 'reverse' and 
+            args['mode'] in ['krum', 'median', 'trimmed_mean', 'bulyan']):
+            target_experiments.append((exp_id, data))
+    
+    # 按f值分组
+    f1_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 1]
+    f2_experiments = [(exp_id, data) for exp_id, data in target_experiments if data['args']['f'] == 2]
+    
+    # 绘制f=1结果
+    colors = {'krum': 'red', 'median': 'green', 'trimmed_mean': 'orange', 'bulyan': 'purple'}
+    markers = {'krum': 'o', 'median': 's', 'trimmed_mean': '^', 'bulyan': 'D'}
+    
+    for exp_id, data in f1_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[0].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker=markers[mode])
+    
+    axes[0].set_title('ConvNet模型 - f=1 (鲁棒聚合算法对比)')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Loss')
+    axes[0].legend()
+    axes[0].grid(True)
+    
+    # 绘制f=2结果
+    for exp_id, data in f2_experiments:
+        mode = data['args']['mode']
+        epochs = data['training_log']['epoch']
+        losses = data['training_log']['loss']
+        axes[1].plot(epochs, losses, color=colors[mode], linewidth=2, 
+                     label=f"{mode} (最终: {losses[-1]:.3f})", marker=markers[mode])
+    
+    axes[1].set_title('ConvNet模型 - f=2 (鲁棒聚合算法对比)')
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel('Loss')
+    axes[1].legend()
+    axes[1].grid(True)
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"表五已保存到: {save_path}")
     else:
         plt.show()
 
@@ -294,10 +358,6 @@ def plot_byzantine_impact(results: Dict[str, Any], save_path: str = None):
 def generate_summary_report(results: Dict[str, Any], save_path: str = None):
     """
     生成汇总报告
-    
-    Args:
-        results: 实验结果字典
-        save_path: 保存路径
     """
     print("\n" + "="*60)
     print("联邦学习拜占庭容错实验汇总报告")
@@ -384,7 +444,7 @@ def main():
     parser = argparse.ArgumentParser(description="分析训练结果")
     parser.add_argument('--logs-dir', default='results/logs', help='日志目录路径')
     parser.add_argument('--output-dir', default='results/plots', help='输出目录路径')
-    parser.add_argument('--plot-type', choices=['all', 'comparison', 'curves', 'byzantine'], 
+    parser.add_argument('--plot-type', choices=['all', 'table1', 'table2', 'table3', 'table4', 'table5'], 
                        default='all', help='绘图类型')
     args = parser.parse_args()
     
@@ -399,17 +459,25 @@ def main():
         return
     
     # 生成图表
-    if args.plot_type in ['all', 'comparison']:
-        plot_algorithm_comparison(results, 
-                                os.path.join(args.output_dir, 'algorithm_comparison.png'))
+    if args.plot_type in ['all', 'table1']:
+        plot_loss_comparison_1(results, 
+                             os.path.join(args.output_dir, 'table1_f0_comparison.png'))
     
-    if args.plot_type in ['all', 'curves']:
-        plot_training_curves(results, 
-                           os.path.join(args.output_dir, 'training_curves.png'))
+    if args.plot_type in ['all', 'table2']:
+        plot_loss_comparison_2(results, 
+                             os.path.join(args.output_dir, 'table2_mlp_f12.png'))
     
-    if args.plot_type in ['all', 'byzantine']:
-        plot_byzantine_impact(results, 
-                            os.path.join(args.output_dir, 'byzantine_impact.png'))
+    if args.plot_type in ['all', 'table3']:
+        plot_loss_comparison_3(results, 
+                             os.path.join(args.output_dir, 'table3_conv_f12.png'))
+    
+    if args.plot_type in ['all', 'table4']:
+        plot_loss_comparison_4(results, 
+                             os.path.join(args.output_dir, 'table4_mlp_robust.png'))
+    
+    if args.plot_type in ['all', 'table5']:
+        plot_loss_comparison_5(results, 
+                             os.path.join(args.output_dir, 'table5_conv_robust.png'))
     
     # 生成汇总报告
     generate_summary_report(results, 

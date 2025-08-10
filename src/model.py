@@ -11,11 +11,10 @@ class MLP(nn.Module):
         x = x.view(-1, 28*28)
         x = F.relu(self.fc1(x))
         return self.fc2(x)
+# 卷积网络：2 层卷积 + 池化 + 2 层全连接
 
 class ConvNet(nn.Module):
-    """
-    增强版卷积网络：2 层卷积 + 池化 + 2 层全连接
-    """
+
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)

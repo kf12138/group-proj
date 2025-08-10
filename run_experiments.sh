@@ -21,7 +21,7 @@ SEED=42
 # reverse攻击类型下（epoch轮次小时也能有较明显效果），各聚合算法在conv和mlp模型训练时的鲁棒性表现（f=0/1/2）
 for model in mlp conv; do
   for mode in average krum median trimmed_mean bulyan; do
-    for f in 0 1 2 3; do
+    for f in 0 1 2; do
       for attack in reverse; do # 其他可选攻击类型有：zero random sign_flip
         echo "=== $model $mode f=$f attack=$attack ==="
         python3 src/train.py --model $model --mode $mode --f $f --epochs $EPOCHS --n-workers $N_WORKERS --batch-size $BATCH_SIZE --attack-type $attack --seed $SEED --save-log
