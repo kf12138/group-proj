@@ -87,7 +87,7 @@ def multi_krum(grad_lists, f, m=None):
 def median(grad_lists, f):
     """
     Median 聚合：对每个参数层，选择所有Worker梯度的中位数。
-    对拜占庭攻击有较强的鲁棒性。
+    对拜占庭攻击有一定的鲁棒性。
     
     Args:
         grad_lists: List[List[Tensor]]，所有Worker的梯度列表
