@@ -10,3 +10,5 @@ __pycache__/
 
 # 忽略你不想推送的临时文件（例如日志等）
 *.log
+# JetBrains IDEs config folder
+.idea/
